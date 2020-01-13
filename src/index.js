@@ -14,11 +14,13 @@ window.addEventListener('DOMContentLoaded', () => {
   app.ports.requestTranslate.subscribe(text => {
     const words = text.split(' ').filter(val => val.trim() !== '')
     const result = words.reduce((bag, word) => {
-      bag.tokens.push(tokenize(word))
-      bag.changed.push(language.changeTokens(word))
+      bag.push({
+        source: tokenize(word),
+        result: language.changeTokens(word)
+      })
 
       return bag
-    }, { tokens: [], changed: [] })
+    }, [])
 
     app.ports.gotTranslation.send(result)
   })

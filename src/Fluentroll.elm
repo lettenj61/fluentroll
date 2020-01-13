@@ -24,7 +24,7 @@ main =
 port requestTranslate : String -> Cmd msg
 
 
-port gotTranslation : (Reply -> msg) -> Sub msg
+port gotTranslation : (List Reply -> msg) -> Sub msg
 
 
 
@@ -34,22 +34,15 @@ port gotTranslation : (Reply -> msg) -> Sub msg
 type alias Model =
     { source : String
     , translation : String
-    , reply : Reply
+    , replies : List Reply
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model "" "" initialReply
+    ( Model "" "" []
     , Cmd.none
     )
-
-
-initialReply : Reply
-initialReply =
-    { tokens = []
-    , changed = []
-    }
 
 
 
@@ -57,15 +50,15 @@ initialReply =
 
 
 type alias Reply =
-    { tokens : List (List String)
-    , changed : List (List String)
+    { source : List String
+    , result : List String
     }
 
 
 type Msg
     = NewInput String
     | ClearInput
-    | GotTranslation Reply
+    | GotTranslation (List Reply)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -81,15 +74,17 @@ update msg model =
             , Cmd.none
             )
 
-        GotTranslation reply ->
+        GotTranslation replies ->
             let
                 newTranslation =
-                    reply.changed
-                        |> List.map (String.join "")
+                    replies
+                        |> List.map (\reply ->
+                            String.join "" reply.result
+                        )
                         |> String.join " "
             in
             ( { model
-                | reply = reply, translation = newTranslation }
+                | replies = replies, translation = newTranslation }
             , Cmd.none
             )
 
@@ -138,34 +133,35 @@ viewOutputText translation =
 viewTranslationDetails : Model -> Html msg
 viewTranslationDetails model =
     let
-        { reply } =
+        { replies } =
             model
-        
-        tokens =
-            List.concat reply.tokens
-        
-        changed =
-            List.concat reply.changed
 
-        viewRows =
-            zip tokens "" changed
-                |> List.map (\(a, b) ->
-                    tr
-                        []
-                        [ td [] [ text a ]
-                        , td [] [ text b ]
-                        ]
-                )
+        viewCells tokens =
+            tokens
+                |> List.map (\tok -> td [] [ text tok ])
+
+        viewTokenMap reply =
+            table
+                [ class "table is-narrow" ]
+                [ tbody
+                    []
+                    [ tr [] <| viewCells reply.source
+                    , tr [] <| viewCells reply.result
+                    ]
+                ]
+
+        viewDetails =
+            List.map viewTokenMap replies
+
     in
     if String.isEmpty model.translation then
         text ""
     else
-        details []
-            [ summary [] [ text "Tokens" ]
-            , table [ class "table is-narrow" ]
-                [ tbody [] viewRows
+        details [] <|
+            List.concat
+                [ [ summary [] [ text "Show tokens" ] ]
+                , viewDetails
                 ]
-            ]
 
 
 

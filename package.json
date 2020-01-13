@@ -4,7 +4,9 @@
   "description": "",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "parcel serve --host localhost --port 8000 --no-source-maps src/index.html",
+    "build": "parcel build --no-source-maps src/index.html"
   },
   "keywords": [],
   "author": "",
